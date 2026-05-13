@@ -1,8 +1,8 @@
 from fastapi import FastAPI
 
-from app.api.routes.health import router as health_router
-from app.api.routes.messages import router as messages_router
-from app.core.config import get_settings
+from app.config import get_settings
+from app.health import router as health_router
+from app.messages import router as messages_router
 
 settings = get_settings()
 app = FastAPI(title=settings.app_name)

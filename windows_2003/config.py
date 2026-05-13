@@ -1,0 +1,40 @@
+import os
+
+
+class Settings(object):
+    def __init__(self):
+        self.app_name = os.getenv('APP_NAME', 'api_for_1C_77')
+        self.rabbitmq_default_user = os.getenv('RABBITMQ_DEFAULT_USER', 'guest')
+        self.rabbitmq_default_pass = os.getenv('RABBITMQ_DEFAULT_PASS', 'guest')
+        self.rabbitmq_host = os.getenv('RABBITMQ_HOST', 'localhost')
+        self.rabbitmq_port = int(os.getenv('RABBITMQ_PORT', '5672'))
+        self.rabbitmq_queue = os.getenv('RABBITMQ_QUEUE', 'events')
+        self.rabbitmq_result_queue_prefix = os.getenv('RABBITMQ_RESULT_QUEUE_PREFIX', 'results')
+        self.rabbitmq_result_ttl_ms = int(os.getenv('RABBITMQ_RESULT_TTL_MS', '3600000'))
+        self.rabbitmq_result_queue_expires_ms = int(os.getenv('RABBITMQ_RESULT_QUEUE_EXPIRES_MS', '86400000'))
+        
+        # 1C settings
+        self.path_1c = os.getenv('PATH_1C', 'C:\\Program Files\\1cv7')
+        self.user_1c = os.getenv('USER_1C', '')
+        self.pass_1c = os.getenv('PASS_1C', '')
+        self.bridge_vbs = os.getenv('BRIDGE_VBS', os.path.dirname(__file__) + '\\bridge.vbs')
+        self.temp_dir = os.getenv('TEMP_DIR', os.path.expanduser('~\\AppData\\Local\\Temp'))
+
+    @property
+    def rabbitmq_url(self):
+        return 'amqp://{0}:{1}@{2}:{3}/'.format(
+            self.rabbitmq_default_user,
+            self.rabbitmq_default_pass,
+            self.rabbitmq_host,
+            self.rabbitmq_port
+        )
+
+
+_settings = None
+
+
+def get_settings():
+    global _settings
+    if _settings is None:
+        _settings = Settings()
+    return _settings

@@ -1,12 +1,13 @@
 import asyncio
 import json
 import uuid
+from typing import Any
 
 import aio_pika
 from aio_pika import DeliveryMode, Message
 from aio_pika.abc import AbstractIncomingMessage
 
-from app.core.config import get_settings
+from app.config import get_settings
 
 
 def _result_queue_arguments() -> dict[str, int]:
@@ -39,7 +40,7 @@ def build_result_queue_name(request_id: str) -> str:
     return f"{settings.rabbitmq_result_queue_prefix}.{request_id}"
 
 
-async def submit_request(payload: dict) -> str:
+async def submit_request(payload: Any) -> str:
     """Publish payload to input queue and return request_id immediately."""
     settings = get_settings()
     connection = await _connect_with_retry()
@@ -64,7 +65,7 @@ async def submit_request(payload: dict) -> str:
         return request_id
 
 
-async def fetch_result(request_id: str, delete_queue_when_done: bool = True) -> dict | None:
+async def fetch_result(request_id: str, delete_queue_when_done: bool = True) -> Any | None:
     """Get response for request_id from output queue. Returns None if still pending."""
     connection = await _connect_with_retry()
 

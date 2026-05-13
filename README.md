@@ -7,19 +7,16 @@
 ```text
 .
 ├── app
-│   ├── api
-│   │   └── routes
-│   │       ├── health.py
-│   │       └── messages.py
-│   ├── core
-│   │   └── config.py
-│   ├── messaging
-│   │   └── rabbitmq.py
-│   ├── schemas
-│   │   └── message.py
-│   ├── workers
-│   │   └── consumer.py
-│   └── main.py
+│   ├── config.py
+│   ├── health.py
+│   ├── messages.py
+│   ├── main.py
+│   └── rabbitmq.py
+├── windows_2003
+│   ├── bridge.vbs
+│   ├── config.py
+│   ├── consumer.py
+│   └── requirements.txt
 ├── docker-compose.yml
 ├── Dockerfile
 ├── requirements.txt
@@ -122,10 +119,15 @@
 ## Сервіси
 
 - `api` - FastAPI застосунок, порт `8000`.
-- `worker` - Python воркер, слухає чергу `events` і обробляє лише одне завдання одночасно (`prefetch=1`), повертає відповідь у `reply_to`.
 - `rabbitmq` - RabbitMQ + management UI:
   - AMQP: `5672`
   - Web UI: `15672`
+
+### Worker
+
+Worker запускається на Windows Server 2003 (Python 3.4.4).
+
+Переглядіть [windows_2003/README_WINDOWS_2003.md](windows_2003/README_WINDOWS_2003.md) для запуску на Windows Server 2003 із Python 3.4.4.
 
 ## RabbitMQ Management
 
@@ -134,4 +136,4 @@
 
 ## Де додавати бізнес-логіку
 
-Основну обробку JSON додайте у воркері в файлі `app/workers/consumer.py` (у блоці `# Business logic goes here`).
+Основну обробку JSON додайте у воркері в файлі `windows_2003/consumer.py` (у функції `handle_message`).

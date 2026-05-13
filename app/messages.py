@@ -2,17 +2,16 @@ from typing import Any
 
 from fastapi import APIRouter, HTTPException, status
 
-from app.messaging.rabbitmq import fetch_result, submit_request
-from app.schemas.message import ProcessMessageRequest
+from app.rabbitmq import fetch_result, submit_request
 
 router = APIRouter(prefix="/messages", tags=["messages"])
 
 
 @router.post("/process", status_code=status.HTTP_202_ACCEPTED)
-async def process(body: ProcessMessageRequest) -> dict[str, Any]:
+async def process(body: Any) -> dict[str, Any]:
     """Прийняти JSON, відправити в чергу і повернути request_id."""
     try:
-        request_id = await submit_request(body.model_dump())
+        request_id = await submit_request(body)
         return {
             "status": "accepted",
             "request_id": request_id,
