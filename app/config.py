@@ -7,6 +7,8 @@ class Settings(BaseSettings):
     app_name: str = "api_for_1C_77"
     app_host: str = "0.0.0.0"
     app_port: int = 8000
+    api_key: str = ""
+    api_key_header_name: str = "X-API-Key"
 
     rabbitmq_default_user: str = "guest"
     rabbitmq_default_pass: str = "guest"

@@ -1,10 +1,11 @@
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.rabbitmq import fetch_result, submit_request
+from app.security import verify_api_key
 
-router = APIRouter(prefix="/messages", tags=["messages"])
+router = APIRouter(prefix="/messages", tags=["messages"], dependencies=[Depends(verify_api_key)])
 
 
 @router.post("/process", status_code=status.HTTP_202_ACCEPTED)

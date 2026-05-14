@@ -41,6 +41,12 @@ USER_1C=Administrator
 PASS_1C=password
 BRIDGE_VBS=C:\scripts\bridge.vbs
 TEMP_DIR=C:\Temp
+
+# Logging
+LOG_DIR=C:\logs\api_for_1c_77
+LOG_FILE=consumer.log
+LOG_LEVEL=INFO
+LOG_RETENTION_DAYS=5
 ```
 
 - Замініть `RABBITMQ_HOST` на IP-адресу вашого RabbitMQ сервера.
@@ -48,6 +54,10 @@ TEMP_DIR=C:\Temp
 - Замініть `USER_1C` і `PASS_1C` на облікові дані користувача 1С.
 - Замініть `BRIDGE_VBS` на шлях до файла `bridge.vbs` (див. нижче).
 - `TEMP_DIR` — папка для тимчасових файлів обміну (має існувати).
+- `LOG_DIR` — директорія для логів worker.
+- `LOG_FILE` — активний файл логів.
+- `LOG_LEVEL` — рівень логування (`DEBUG`, `INFO`, `WARNING`, `ERROR`).
+- `LOG_RETENTION_DAYS` — скільки календарних днів зберігати логи (за замовчуванням 5).
 
 ## Бізнес-логіка VBScript Bridge
 
@@ -110,17 +120,27 @@ WScript.Echo resultFile
 
 ## Логи
 
-Всі операції логуються в консоль з префіксом `[consumer]`:
+Всі операції логуються у файл `LOG_DIR\\LOG_FILE`.
+
+Ротація виконується щодня опівночі. За замовчуванням зберігаються логи за останні 5 календарних днів (включно з поточним днем).
+
+Приклад файлів:
 
 ```
-[consumer] received: {'procedure': 'ping', ...}
-[consumer] temp input file created: C:\Temp\tmp12345.json
-[consumer] executing: cscript.exe bridge.vbs ...
-[consumer] result file: C:\Temp\tmp12345_result.json
-[consumer] result: {'status': 'ok', ...}
-[consumer] response sent to results.uuid-xxx
-[consumer] cleaned up input file: C:\Temp\tmp12345.json
-[consumer] cleaned up output file: C:\Temp\tmp12345_result.json
+C:\logs\api_for_1c_77\consumer.log
+C:\logs\api_for_1c_77\consumer.log.2026-05-10
+C:\logs\api_for_1c_77\consumer.log.2026-05-11
+...
+```
+
+Приклад повідомлень у логу:
+
+```
+2026-05-14 08:00:00 [INFO] [consumer] listening queue: events
+2026-05-14 08:00:01 [INFO] [consumer] received payload: {'procedure': 'ping', ...}
+2026-05-14 08:00:01 [INFO] [consumer] temp input file created: C:\Temp\tmp12345.json
+2026-05-14 08:00:02 [INFO] [consumer] executing: cscript.exe bridge.vbs ...
+2026-05-14 08:00:03 [INFO] [consumer] response sent to results.uuid-xxx
 ```
 
 ## Запуск
@@ -132,7 +152,7 @@ cd windows_2003
 python consumer.py
 ```
 
-Логи будуть виводитись у консоль.
+Логи будуть писатись у файл `LOG_DIR\\LOG_FILE`.
 
 ## Запуск як Windows Service (опціонально)
 

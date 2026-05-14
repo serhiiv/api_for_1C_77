@@ -10,10 +10,43 @@ import time
 import os
 import tempfile
 import subprocess
+import logging
+from logging.handlers import TimedRotatingFileHandler
 
 import pika
 
 from config import get_settings
+
+
+LOGGER = logging.getLogger('consumer')
+
+
+def setup_logging():
+    """Configure logging to file with daily rotation and 5-day retention."""
+    settings = get_settings()
+
+    if not os.path.exists(settings.log_dir):
+        os.makedirs(settings.log_dir)
+
+    log_path = os.path.join(settings.log_dir, settings.log_file)
+    handler = TimedRotatingFileHandler(
+        log_path,
+        when='midnight',
+        interval=1,
+        backupCount=max(settings.log_retention_days - 1, 0),
+        encoding='utf-8'
+    )
+    handler.suffix = '%Y-%m-%d'
+
+    formatter = logging.Formatter(
+        '%(asctime)s [%(levelname)s] [%(name)s] %(message)s',
+        '%Y-%m-%d %H:%M:%S'
+    )
+    handler.setFormatter(formatter)
+
+    LOGGER.setLevel(getattr(logging, settings.log_level.upper(), logging.INFO))
+    LOGGER.addHandler(handler)
+    LOGGER.propagate = False
 
 
 def connect_with_retry(retries=10, delay=3):
@@ -37,8 +70,12 @@ def connect_with_retry(retries=10, delay=3):
             return connection
         except Exception as exc:
             last_exception = exc
-            print('[consumer] Connection attempt {0}/{1} failed, retrying in {2}s...'.format(
-                attempt + 1, retries, delay))
+            LOGGER.warning(
+                'Connection attempt %s/%s failed, retrying in %ss...',
+                attempt + 1,
+                retries,
+                delay
+            )
             time.sleep(delay)
 
     if last_exception:
@@ -61,7 +98,7 @@ def handle_message(ch, method, properties, body):
     try:
         # Parse incoming message
         payload = json.loads(body.decode('utf-8'))
-        print('[consumer] received: {0}'.format(payload))
+        LOGGER.info('received payload: %s', payload)
         
         settings = get_settings()
         
@@ -71,31 +108,32 @@ def handle_message(ch, method, properties, body):
         payload_bytes = payload_json.encode('cp1251')
         os.write(fd_input, payload_bytes)
         os.close(fd_input)
-        print('[consumer] temp input file created: {0}'.format(temp_input_file))
+        LOGGER.info('temp input file created: %s', temp_input_file)
         
         # Call VBScript bridge
         try:
             cmd = [
                 'cscript.exe',
+                '//nologo',
                 settings.bridge_vbs,
                 temp_input_file,
                 settings.path_1c,
                 settings.user_1c,
                 settings.pass_1c
             ]
-            print('[consumer] executing: {0}'.format(' '.join(cmd)))
+            LOGGER.info('executing: %s', ' '.join(cmd))
             
             proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             stdout, stderr = proc.communicate()
             
             if proc.returncode != 0:
                 error_msg = stderr.decode('cp1251', errors='ignore') if stderr else 'Unknown error'
-                print('[consumer] VBScript error: {0}'.format(error_msg))
+                LOGGER.error('VBScript error: %s', error_msg)
                 response = {'status': 'error', 'detail': 'VBScript failed', 'error': error_msg}
             else:
                 # Parse VBScript output to get result file path
                 temp_output_file = stdout.decode('cp1251', errors='ignore').strip()
-                print('[consumer] result file: {0}'.format(temp_output_file))
+                LOGGER.info('result file: %s', temp_output_file)
                 
                 # Read result file in win-1251 and convert to UTF-8
                 if temp_output_file and os.path.exists(temp_output_file):
@@ -103,13 +141,13 @@ def handle_message(ch, method, properties, body):
                         result_bytes = f.read()
                     result_json = result_bytes.decode('cp1251')
                     result_data = json.loads(result_json)
-                    print('[consumer] result: {0}'.format(result_data))
+                    LOGGER.info('result: %s', result_data)
                     response = result_data
                 else:
                     response = {'status': 'error', 'detail': 'Result file not found'}
                     
         except Exception as vbs_exc:
-            print('[consumer] VBScript execution error: {0}'.format(vbs_exc))
+            LOGGER.exception('VBScript execution error: %s', vbs_exc)
             response = {'status': 'error', 'detail': 'VBScript execution failed', 'error': str(vbs_exc)}
         
         # If response is still None, create error response
@@ -129,12 +167,12 @@ def handle_message(ch, method, properties, body):
                     correlation_id=properties.correlation_id
                 )
             )
-            print('[consumer] response sent to {0}'.format(reply_to))
+            LOGGER.info('response sent to %s', reply_to)
         
         ch.basic_ack(delivery_tag=method.delivery_tag)
         
     except Exception as exc:
-        print('[consumer] Error processing message: {0}'.format(exc))
+        LOGGER.exception('Error processing message: %s', exc)
         ch.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
     
     finally:
@@ -142,16 +180,16 @@ def handle_message(ch, method, properties, body):
         try:
             if temp_input_file and os.path.exists(temp_input_file):
                 os.remove(temp_input_file)
-                print('[consumer] cleaned up input file: {0}'.format(temp_input_file))
+                LOGGER.info('cleaned up input file: %s', temp_input_file)
         except Exception as e:
-            print('[consumer] Error cleaning up input file: {0}'.format(e))
+            LOGGER.warning('Error cleaning up input file: %s', e)
         
         try:
             if temp_output_file and os.path.exists(temp_output_file):
                 os.remove(temp_output_file)
-                print('[consumer] cleaned up output file: {0}'.format(temp_output_file))
+                LOGGER.info('cleaned up output file: %s', temp_output_file)
         except Exception as e:
-            print('[consumer] Error cleaning up output file: {0}'.format(e))
+            LOGGER.warning('Error cleaning up output file: %s', e)
 
 
 def run_consumer():
@@ -169,16 +207,17 @@ def run_consumer():
     # Set callback for messages
     channel.basic_consume(handle_message, queue=settings.rabbitmq_queue)
 
-    print('[consumer] listening queue: {0}'.format(settings.rabbitmq_queue))
-    print('[consumer] waiting for messages...')
+    LOGGER.info('listening queue: %s', settings.rabbitmq_queue)
+    LOGGER.info('waiting for messages...')
     
     try:
         channel.start_consuming()
     except KeyboardInterrupt:
-        print('[consumer] shutting down...')
+        LOGGER.info('shutting down...')
         channel.stop_consuming()
         connection.close()
 
 
 if __name__ == '__main__':
+    setup_logging()
     run_consumer()

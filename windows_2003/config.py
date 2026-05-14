@@ -19,6 +19,10 @@ class Settings(object):
         self.pass_1c = os.getenv('PASS_1C', '')
         self.bridge_vbs = os.getenv('BRIDGE_VBS', os.path.dirname(__file__) + '\\bridge.vbs')
         self.temp_dir = os.getenv('TEMP_DIR', os.path.expanduser('~\\AppData\\Local\\Temp'))
+        self.log_dir = os.getenv('LOG_DIR', os.path.dirname(__file__) + '\\logs')
+        self.log_file = os.getenv('LOG_FILE', 'consumer.log')
+        self.log_level = os.getenv('LOG_LEVEL', 'INFO')
+        self.log_retention_days = int(os.getenv('LOG_RETENTION_DAYS', '5'))
 
     @property
     def rabbitmq_url(self):

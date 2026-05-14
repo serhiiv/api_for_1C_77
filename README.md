@@ -43,11 +43,31 @@
 	curl http://localhost:8000/health
 	```
 
-4. Надішліть JSON на обробку через API (асинхронна постановка в чергу):
+4. API захищене ключем доступу. У `.env` задайте `API_KEY`, а для запитів додавайте заголовок `X-API-Key` з тим самим значенням.
 
 	```bash
 	curl -X POST http://localhost:8000/messages/process \
 	  -H "Content-Type: application/json" \
+	  -H "X-API-Key: change-me" \
+	  -d '{
+	    "procedure": "ping",
+	    "parameters": {
+	      "consumer_number": 45733,
+	      "start_date": "01.01.2025",
+	      "end_date": "31.01.2025",
+	      "commodity_name": "Бритва"
+	    }
+	  }'
+	```
+
+	Якщо ключ не передати або він неправильний, API поверне `401 Unauthorized`.
+
+5. Надішліть JSON на обробку через API (асинхронна постановка в чергу):
+
+	```bash
+	curl -X POST http://localhost:8000/messages/process \
+	  -H "Content-Type: application/json" \
+	  -H "X-API-Key: change-me" \
 	  -d '{
 	    "procedure": "ping",
 	    "parameters": {

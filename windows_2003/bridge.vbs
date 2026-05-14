@@ -63,9 +63,9 @@ If Err.Number <> 0 Then
     WScript.Quit 1
 End If
 
-' 2. Викликаємо глАПИ і отримуємо шлях до вихідного файлу
+' 2. Викликаємо api_global і отримуємо шлях до вихідного файлу
 ' Передаємо шлях у 1С, вона повертає шлях до створеного _out.json
-evalExpr = "глАПИ(""" & Replace(strInputFile, """", """"") & """)"
+evalExpr = "api_global(""" & Replace(strInputFile, """", """"") & """)"
 strResultFile = oneC.EvalExpr(evalExpr)
 
 If Err.Number <> 0 Then
