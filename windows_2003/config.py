@@ -1,4 +1,28 @@
 import os
+from urllib.parse import quote
+
+
+def _load_dotenv_if_exists():
+    """Load KEY=VALUE pairs from .env near this file into process env."""
+    env_path = os.path.join(os.path.dirname(__file__), '.env')
+    if not os.path.exists(env_path):
+        return
+
+    with open(env_path, 'r') as env_file:
+        for raw_line in env_file:
+            line = raw_line.strip()
+            if not line or line.startswith('#') or '=' not in line:
+                continue
+
+            key, value = line.split('=', 1)
+            key = key.strip()
+            value = value.strip().strip('"').strip("'")
+
+            if key and key not in os.environ:
+                os.environ[key] = value
+
+
+_load_dotenv_if_exists()
 
 
 class Settings(object):
@@ -26,9 +50,11 @@ class Settings(object):
 
     @property
     def rabbitmq_url(self):
+        user = quote(self.rabbitmq_default_user, safe='')
+        password = quote(self.rabbitmq_default_pass, safe='')
         return 'amqp://{0}:{1}@{2}:{3}/'.format(
-            self.rabbitmq_default_user,
-            self.rabbitmq_default_pass,
+            user,
+            password,
             self.rabbitmq_host,
             self.rabbitmq_port
         )

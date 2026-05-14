@@ -1,4 +1,5 @@
 from functools import lru_cache
+from urllib.parse import quote
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -23,8 +24,10 @@ class Settings(BaseSettings):
 
     @property
     def rabbitmq_url(self) -> str:
+        user = quote(self.rabbitmq_default_user, safe="")
+        password = quote(self.rabbitmq_default_pass, safe="")
         return (
-            f"amqp://{self.rabbitmq_default_user}:{self.rabbitmq_default_pass}"
+            f"amqp://{user}:{password}"
             f"@{self.rabbitmq_host}:{self.rabbitmq_port}/"
         )
 

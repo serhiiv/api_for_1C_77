@@ -71,9 +71,11 @@ def connect_with_retry(retries=10, delay=3):
         except Exception as exc:
             last_exception = exc
             LOGGER.warning(
-                'Connection attempt %s/%s failed, retrying in %ss...',
+                'Connection attempt %s/%s failed (%s: %s), retrying in %ss...',
                 attempt + 1,
                 retries,
+                exc.__class__.__name__,
+                exc,
                 delay
             )
             time.sleep(delay)

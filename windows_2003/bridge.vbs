@@ -65,7 +65,7 @@ End If
 
 ' 2. Викликаємо api_global і отримуємо шлях до вихідного файлу
 ' Передаємо шлях у 1С, вона повертає шлях до створеного _out.json
-evalExpr = "api_global(""" & Replace(strInputFile, """", """"") & """)"
+evalExpr = "api_global(" & Chr(34) & Replace(strInputFile, Chr(34), Chr(34) & Chr(34)) & Chr(34) & ")"
 strResultFile = oneC.EvalExpr(evalExpr)
 
 If Err.Number <> 0 Then
