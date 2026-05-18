@@ -1,0 +1,13 @@
+{
+    "procedure": "ТестАПІ",
+    "parameters": {
+        "number": 3,
+        "date": "18.05.2026",
+        "name": "Текст \"Назва іїє\"",
+        "array": [3, 4, 5],
+        "object": {
+            "key1": "value1",
+            "key2": "value2"
+        }
+    }
+}
