@@ -21,6 +21,27 @@ from config import get_settings
 LOGGER = logging.getLogger('consumer')
 
 
+def get_cscript_executable(settings):
+    """Pick 32-bit cscript on x64 Windows for compatibility with 1C 7.7 COM."""
+    if settings.cscript_exe:
+        return settings.cscript_exe
+
+    system_root = os.environ.get('SystemRoot') or 'C:\\Windows'
+    wow64_candidates = [
+        os.path.join(system_root, 'SysWOW64', 'cscript.exe'),
+        'C:\\Windows\\SysWOW64\\cscript.exe'
+    ]
+    for wow64_cscript in wow64_candidates:
+        if os.path.exists(wow64_cscript):
+            return wow64_cscript
+
+    system32_cscript = os.path.join(system_root, 'System32', 'cscript.exe')
+    if os.path.exists(system32_cscript):
+        return system32_cscript
+
+    return 'cscript.exe'
+
+
 def setup_logging():
     """Configure logging to file with daily rotation and 5-day retention."""
     settings = get_settings()
@@ -114,8 +135,9 @@ def handle_message(ch, method, properties, body):
         
         # Call VBScript bridge
         try:
+            cscript_exe = get_cscript_executable(settings)
             cmd = [
-                'cscript.exe',
+                cscript_exe,
                 '//nologo',
                 settings.bridge_vbs,
                 temp_input_file,
@@ -129,7 +151,10 @@ def handle_message(ch, method, properties, body):
             stdout, stderr = proc.communicate()
             
             if proc.returncode != 0:
-                error_msg = stderr.decode('cp1251', errors='ignore') if stderr else 'Unknown error'
+                # cscript.exe routes WScript.Echo to stdout; stderr may contain runtime errors
+                stdout_msg = stdout.decode('cp866', errors='ignore').strip() if stdout else ''
+                stderr_msg = stderr.decode('cp866', errors='ignore').strip() if stderr else ''
+                error_msg = stdout_msg or stderr_msg or 'Unknown error'
                 LOGGER.error('VBScript error: %s', error_msg)
                 response = {'status': 'error', 'detail': 'VBScript failed', 'error': error_msg}
             else:

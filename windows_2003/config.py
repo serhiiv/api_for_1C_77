@@ -42,6 +42,7 @@ class Settings(object):
         self.user_1c = os.getenv('USER_1C', '')
         self.pass_1c = os.getenv('PASS_1C', '')
         self.bridge_vbs = os.getenv('BRIDGE_VBS', os.path.dirname(__file__) + '\\bridge.vbs')
+        self.cscript_exe = os.getenv('CSCRIPT_EXE', '')
         self.temp_dir = os.getenv('TEMP_DIR', os.path.expanduser('~\\AppData\\Local\\Temp'))
         self.log_dir = os.getenv('LOG_DIR', os.path.dirname(__file__) + '\\logs')
         self.log_file = os.getenv('LOG_FILE', 'consumer.log')

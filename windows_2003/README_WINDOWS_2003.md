@@ -36,10 +36,11 @@ RABBITMQ_PORT=5672
 RABBITMQ_QUEUE=events
 
 # 1C Configuration
-PATH_1C=C:\Program Files\1cv7
+PATH_1C=C:\Bases\Trade77
 USER_1C=Administrator
 PASS_1C=password
 BRIDGE_VBS=C:\scripts\bridge.vbs
+CSCRIPT_EXE=C:\Windows\SysWOW64\cscript.exe
 TEMP_DIR=C:\Temp
 
 # Logging
@@ -50,9 +51,10 @@ LOG_RETENTION_DAYS=5
 ```
 
 - Замініть `RABBITMQ_HOST` на IP-адресу вашого RabbitMQ сервера.
-- Замініть `PATH_1C` на шлях до 1С:Підприємство на локальній машині.
+- Замініть `PATH_1C` на шлях до **інформаційної бази 1С 7.7** (каталог бази для ключа `/D`), а не до папки встановлення програми.
 - Замініть `USER_1C` і `PASS_1C` на облікові дані користувача 1С.
 - Замініть `BRIDGE_VBS` на шлях до файла `bridge.vbs` (див. нижче).
+- `CSCRIPT_EXE` — рекомендовано вказати `C:\Windows\SysWOW64\cscript.exe` на x64, щоб 1С 7.7 COM запускався у 32-bit host.
 - `TEMP_DIR` — папка для тимчасових файлів обміну (має існувати).
 - `LOG_DIR` — директорія для логів worker.
 - `LOG_FILE` — активний файл логів.

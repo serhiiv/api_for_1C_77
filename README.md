@@ -31,29 +31,29 @@ API для інтеграції з 1С:Підприємство 7.7. Основ�
 
 1. Створіть `.env` на основі прикладу і введіть свої параметри:
 
-   ```bash
-   cp .env.example .env
-   ```
+```bash
+cp .env.example .env
+```
 
 2. Запустіть API та RabbitMQ:
 
-   ```bash
-   docker compose up --build
-   ```
+```bash
+docker compose up --build
+```
 
 3. Перевірте health endpoint:
 
-   ```bash
-   curl http://localhost:8000/health
-   ```
+```bash
+curl http://localhost:8000/health
+```
 
 4. API захищене ключем доступу. У `.env` задайте `API_KEY`, а в запитах передавайте той самий ключ у заголовку `X-API-Key`.
 
-   ```bash
-   curl -X POST http://localhost:8000/messages/process \
-     -H "Content-Type: application/json" \
-     -H "X-API-Key: change-me" \
-     -d '{
+```bash
+curl -X POST http://localhost:8000/messages/process \
+    -H "Content-Type: application/json" \
+    -H "X-API-Key: change-me" \
+    -d '{
     "procedure": "ТестАПІ",
     "parameters": {
         "number": 3,
@@ -65,71 +65,58 @@ API для інтеграції з 1С:Підприємство 7.7. Основ�
             "key2": "value2"
             }
         }
-    }
-    '
+    }'
 ```
 
    Якщо ключ не передати або він неправильний, API повертає `401 Unauthorized`.
 
 5. Надішліть запит на обробку. API повертає `request_id` і адресу для отримання результату:
 
-   ```bash
-   curl -X POST http://localhost:8000/messages/process \
-     -H "Content-Type: application/json" \
-     -H "X-API-Key: change-me" \
-     -d '{
-       "procedure": "ping",
-       "parameters": {
-         "consumer_number": 45733,
-         "start_date": "01.01.2025",
-         "end_date": "31.01.2025",
-         "commodity_name": "Бритва"
-       }
-     }'
-   ```
-
    Приклад відповіді:
 
-   ```json
-   {
-     "status": "accepted",
-     "request_id": "c0d2f0f0-3d7a-4c42-b72f-8a67ba995d8e",
-     "result_endpoint": "/messages/result/c0d2f0f0-3d7a-4c42-b72f-8a67ba995d8e"
-   }
-   ```
+```json
+{
+    "status": "accepted",
+    "request_id": "c0d2f0f0-3d7a-4c42-b72f-8a67ba995d8e",
+    "result_endpoint": "/messages/result/c0d2f0f0-3d7a-4c42-b72f-8a67ba995d8e"
+}
+```
 
 6. Отримайте результат за `request_id`:
 
-   ```bash
-   curl http://localhost:8000/messages/result/c0d2f0f0-3d7a-4c42-b72f-8a67ba995d8e
-   ```
+```bash
+curl http://localhost:8000/messages/result/c0d2f0f0-3d7a-4c42-b72f-8a67ba995d8e
+```
 
-   Поки обробка триває:
+Поки обробка триває:
 
-   ```json
-   {"status": "pending", "request_id": "c0d2f0f0-3d7a-4c42-b72f-8a67ba995d8e"}
-   ```
+```json
+{"status": "pending", "request_id": "c0d2f0f0-3d7a-4c42-b72f-8a67ba995d8e"}
+```
 
-   Після завершення:
+Після завершення:
 
-   ```json
-   {
-     "status": "ready",
-     "request_id": "c0d2f0f0-3d7a-4c42-b72f-8a67ba995d8e",
-     "result": {
-       "status": "ok",
-       "data": {
-         "procedure": "ping",
-         "parameters": {
-           "consumer_number": 45733,
-           "start_date": "01.01.2025",
-           "end_date": "31.01.2025",
-           "commodity_name": "Бритва"
-         }
-       }
-     }
-   }
-   ```
+```json
+{
+    "status": "ready",
+    "request_id": "c0d2f0f0-3d7a-4c42-b72f-8a67ba995d8e",
+    "result": {
+    "status": "ok",
+    "message": "test passed",
+    "data":   {
+        "number": 3,
+        "date": "18.05.26",
+        "name": "Текст \"Назва іїє\"",
+        "array": [ 3, 4, 5 ],
+        "object":     {
+            "key1": "value1",
+            "key2": "value2"
+            }
+        },
+    "seconds": 0
+    }
+}
+```
 
 ## Як це працює
 
