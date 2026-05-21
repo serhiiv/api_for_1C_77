@@ -48,8 +48,6 @@ Err.Clear
 Set oneC = CreateObject("V77.Application")
 If Err.Number <> 0 Or TypeName(oneC) = "Nothing" Then
     WScript.Echo "Error: Cannot create V77.Application: " & Err.Description & " (Err=" & CStr(Err.Number) & ")"
-    WScript.Echo "Hint: 1C 7.7 COM is usually 32-bit. Run script with %SystemRoot%\SysWOW64\cscript.exe on x64 Windows."
-    WScript.Echo "Hint: Ensure 1C 7.7 is installed and COM class V77.Application is registered."
     WScript.Quit 1
 End If
 
