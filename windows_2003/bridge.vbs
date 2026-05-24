@@ -64,9 +64,10 @@ If Err.Number <> 0 Then
     WScript.Quit 1
 End If
 
-' 2. Викликаємо api_global і отримуємо шлях до вихідного файлу
+' 2. Викликаємо api_worker і отримуємо шлях до вихідного файлу
 ' Передаємо шлях у 1С, вона повертає шлях до створеного _out.json
-evalExpr = "api_global(" & Chr(34) & Replace(strInputFile, Chr(34), Chr(34) & Chr(34)) & Chr(34) & ")"
+' Use ASCII function name to avoid codepage-related corruption in VBScript/CScript.
+evalExpr = "api_worker(" & Chr(34) & Replace(strInputFile, Chr(34), Chr(34) & Chr(34)) & Chr(34) & ")"
 strResultFile = oneC.EvalExpr(evalExpr)
 
 If Err.Number <> 0 Then
