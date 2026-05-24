@@ -1,5 +1,5 @@
 {
-    "procedure": "ТестАПІ",
+    "procedure": "test",
     "parameters": {
         "number": 3,
         "date": "18.05.2026",
