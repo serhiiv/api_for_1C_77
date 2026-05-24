@@ -67,6 +67,7 @@ End If
 ' 2. Викликаємо api_worker і отримуємо шлях до вихідного файлу
 ' Передаємо шлях у 1С, вона повертає шлях до створеного _out.json
 ' Use ASCII function name to avoid codepage-related corruption in VBScript/CScript.
+' Для імені функції використовується ASCII, щоб уникнути помилки з кодовою сторінкою, у VBScript/CScript.
 evalExpr = "api_worker(" & Chr(34) & Replace(strInputFile, Chr(34), Chr(34) & Chr(34)) & Chr(34) & ")"
 strResultFile = oneC.EvalExpr(evalExpr)
 
