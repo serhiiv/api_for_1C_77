@@ -168,7 +168,8 @@ def handle_message(ch, method, properties, body):
                         result_bytes = f.read()
                     result_json = result_bytes.decode('cp1251')
                     result_data = json.loads(result_json)
-                    LOGGER.info('result: %s', result_json[:256])  # Log first 256 chars of result JSON
+                    result_preview = ' '.join(result_json[:300].split())
+                    LOGGER.info('result: %s', result_preview)  # Log first 300 chars in one line
                     response = result_data
                 else:
                     response = {'status': 'error', 'detail': 'Result file not found'}

@@ -6,25 +6,34 @@ API для інтеграції з 1С:Підприємство 7.7. Основ�
 
 ```text
 .
+├── .dockerignore
+├── .env.example
 ├── app
+│   ├── __init__.py
 │   ├── config.py
 │   ├── health.py
 │   ├── main.py
 │   ├── messages.py
 │   ├── rabbitmq.py
 │   └── security.py
-├── windows_2003
-│   ├── bridge.vbs
-│   ├── config.py
-│   ├── consumer.py
-│   ├── global_module_for_1C.txt
-│   ├── README_WINDOWS_2003.md
-│   └── requirements.txt
-├── .env.example
 ├── docker-compose.yml
 ├── Dockerfile
 ├── LICENSE
-└── requirements.txt
+├── README.md
+├── requirements.txt
+└── windows_2003
+    ├── .env.example
+    ├── bridge.vbs
+    ├── config.py
+    ├── consumer.py
+    ├── logs
+    │   └── consumer.log
+    ├── README_WINDOWS_2003.md
+    ├── reports
+    │   ├── test.ert
+    │   └── json_for_test
+    │       └── test.ert
+    └── requirements.txt
 ```
 
 ## Швидкий старт
