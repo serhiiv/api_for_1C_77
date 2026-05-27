@@ -10,6 +10,9 @@ services:
     depends_on:
       rabbitmq:
         condition: service_healthy
+    networks:
+      rabbit_net:
+        ipv4_address: ${API_SHARED_IP:-172.30.100.10}
 
   rabbitmq:
     image: rabbitmq:3.13-management
@@ -27,6 +30,16 @@ services:
       retries: 10
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      rabbit_net:
+        ipv4_address: ${RABBITMQ_SHARED_IP:-172.30.100.20}
 
 volumes:
   rabbitmq_data:
+
+networks:
+  rabbit_net:
+    driver: default
+    ipam:
+      config:
+        - subnet: ${SHARED_SUBNET:-172.30.100.0/24}
