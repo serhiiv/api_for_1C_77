@@ -121,7 +121,7 @@ def handle_message(ch, method, properties, body):
     try:
         # Parse incoming message
         payload = json.loads(body.decode('utf-8'))
-        LOGGER.info('received payload: %s', payload)
+        LOGGER.info('received : %s', payload)
         
         settings = get_settings()
         
@@ -131,7 +131,7 @@ def handle_message(ch, method, properties, body):
         payload_bytes = payload_json.encode('cp1251')
         os.write(fd_input, payload_bytes)
         os.close(fd_input)
-        LOGGER.info('temp input file created: %s', temp_input_file)
+        LOGGER.debug('temp input file created: %s', temp_input_file)
         
         # Call VBScript bridge
         try:
@@ -160,7 +160,7 @@ def handle_message(ch, method, properties, body):
             else:
                 # Parse VBScript output to get result file path
                 temp_output_file = stdout.decode('cp1251', errors='ignore').strip()
-                LOGGER.info('result file: %s', temp_output_file)
+                LOGGER.debug('result file: %s', temp_output_file)
                 
                 # Read result file in win-1251 and convert to UTF-8
                 if temp_output_file and os.path.exists(temp_output_file):
@@ -208,16 +208,16 @@ def handle_message(ch, method, properties, body):
         try:
             if temp_input_file and os.path.exists(temp_input_file):
                 os.remove(temp_input_file)
-                LOGGER.info('cleaned up input file: %s', temp_input_file)
+                LOGGER.debug('cleaned up input file: %s', temp_input_file)
         except Exception as e:
-            LOGGER.warning('Error cleaning up input file: %s', e)
+            LOGGER.debug('Error cleaning up input file: %s', e)
         
         try:
             if temp_output_file and os.path.exists(temp_output_file):
                 os.remove(temp_output_file)
-                LOGGER.info('cleaned up output file: %s', temp_output_file)
+                LOGGER.debug('cleaned up output file: %s', temp_output_file)
         except Exception as e:
-            LOGGER.warning('Error cleaning up output file: %s', e)
+            LOGGER.debug('Error cleaning up output file: %s', e)
 
 
 def run_consumer():
