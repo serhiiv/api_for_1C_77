@@ -36,6 +36,7 @@ class Settings(object):
         self.rabbitmq_result_queue_prefix = os.getenv('RABBITMQ_RESULT_QUEUE_PREFIX', 'results')
         self.rabbitmq_result_ttl_ms = int(os.getenv('RABBITMQ_RESULT_TTL_MS', '3600000'))
         self.rabbitmq_result_queue_expires_ms = int(os.getenv('RABBITMQ_RESULT_QUEUE_EXPIRES_MS', '86400000'))
+        self.rabbitmq_heartbeat = int(os.getenv('RABBITMQ_HEARTBEAT', '60'))
         
         # 1C settings
         self.path_1c = os.getenv('PATH_1C', 'C:\\Program Files\\1cv7')

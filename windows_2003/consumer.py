@@ -85,7 +85,8 @@ def connect_with_retry(retries=10, delay=3):
                 pika.ConnectionParameters(
                     host=settings.rabbitmq_host,
                     port=settings.rabbitmq_port,
-                    credentials=credentials
+                    credentials=credentials,
+                    heartbeat=settings.rabbitmq_heartbeat
                 )
             )
             return connection
@@ -148,7 +149,22 @@ def handle_message(ch, method, properties, body):
             LOGGER.info('executing: %s', ' '.join(cmd))
             
             proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            stdout, stderr = proc.communicate()
+            
+            # Periodically poll process and service RabbitMQ connection events (heartbeats)
+            stdout, stderr = None, None
+            while proc.poll() is None:
+                try:
+                    stdout, stderr = proc.communicate(timeout=1)
+                    break
+                except subprocess.TimeoutExpired:
+                    try:
+                        if ch.connection and ch.connection.is_open:
+                            ch.connection.process_data_events(time_limit=0)
+                    except Exception as evt_exc:
+                        LOGGER.warning('Heartbeat/connection event error during VBScript execution: %s', evt_exc)
+            
+            if stdout is None:
+                stdout, stderr = proc.communicate()
             
             if proc.returncode != 0:
                 # cscript.exe routes WScript.Echo to stdout; stderr may contain runtime errors
@@ -187,21 +203,55 @@ def handle_message(ch, method, properties, body):
         if reply_to:
             response_json = json.dumps(response, ensure_ascii=False)
             response_body = response_json.encode('utf-8')
-            ch.basic_publish(
-                exchange='',
-                routing_key=reply_to,
-                body=response_body,
-                properties=pika.BasicProperties(
-                    correlation_id=properties.correlation_id
-                )
-            )
-            LOGGER.info('response sent to %s', reply_to)
+            published = False
+            
+            if ch.is_open and ch.connection and ch.connection.is_open:
+                try:
+                    ch.basic_publish(
+                        exchange='',
+                        routing_key=reply_to,
+                        body=response_body,
+                        properties=pika.BasicProperties(
+                            correlation_id=properties.correlation_id
+                        )
+                    )
+                    LOGGER.info('response sent to %s', reply_to)
+                    published = True
+                except Exception as pub_exc:
+                    LOGGER.warning('Failed to publish response on current channel: %s', pub_exc)
+            
+            # Fallback: if main connection lost during execution, create temporary connection to deliver response
+            if not published:
+                LOGGER.warning('Main connection unusable. Trying fallback connection to send response to %s...', reply_to)
+                try:
+                    fallback_conn = connect_with_retry(retries=3, delay=1)
+                    fallback_ch = fallback_conn.channel()
+                    fallback_ch.basic_publish(
+                        exchange='',
+                        routing_key=reply_to,
+                        body=response_body,
+                        properties=pika.BasicProperties(
+                            correlation_id=properties.correlation_id
+                        )
+                    )
+                    fallback_conn.close()
+                    LOGGER.info('response successfully sent to %s via fallback connection', reply_to)
+                except Exception as fb_exc:
+                    LOGGER.error('Failed to send response via fallback connection: %s', fb_exc)
         
-        ch.basic_ack(delivery_tag=method.delivery_tag)
+        if ch.is_open:
+            try:
+                ch.basic_ack(delivery_tag=method.delivery_tag)
+            except Exception as ack_err:
+                LOGGER.warning('Failed to ack message: %s', ack_err)
         
     except Exception as exc:
         LOGGER.exception('Error processing message: %s', exc)
-        ch.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
+        if ch.is_open:
+            try:
+                ch.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
+            except Exception as nack_err:
+                LOGGER.warning('Failed to nack message: %s', nack_err)
     
     finally:
         # Clean up temporary files
@@ -221,29 +271,44 @@ def handle_message(ch, method, properties, body):
 
 
 def run_consumer():
-    """Run the message consumer."""
+    """Run the message consumer with automatic reconnection."""
     settings = get_settings()
-    connection = connect_with_retry()
-    channel = connection.channel()
-
-    # Declare input queue
-    channel.queue_declare(queue=settings.rabbitmq_queue, durable=True)
     
-    # Set prefetch to 1: process one message at a time
-    channel.basic_qos(prefetch_count=1)
+    while True:
+        try:
+            connection = connect_with_retry()
+            channel = connection.channel()
 
-    # Set callback for messages
-    channel.basic_consume(handle_message, queue=settings.rabbitmq_queue)
+            # Declare input queue
+            channel.queue_declare(queue=settings.rabbitmq_queue, durable=True)
+            
+            # Set prefetch to 1: process one message at a time
+            channel.basic_qos(prefetch_count=1)
 
-    LOGGER.info('listening queue: %s', settings.rabbitmq_queue)
-    LOGGER.info('waiting for messages...')
-    
-    try:
-        channel.start_consuming()
-    except KeyboardInterrupt:
-        LOGGER.info('shutting down...')
-        channel.stop_consuming()
-        connection.close()
+            # Set callback for messages
+            channel.basic_consume(handle_message, queue=settings.rabbitmq_queue)
+
+            LOGGER.info('listening queue: %s', settings.rabbitmq_queue)
+            LOGGER.info('waiting for messages...')
+            
+            channel.start_consuming()
+        except KeyboardInterrupt:
+            LOGGER.info('shutting down...')
+            try:
+                if 'channel' in locals() and channel.is_open:
+                    channel.stop_consuming()
+                if 'connection' in locals() and connection.is_open:
+                    connection.close()
+            except Exception:
+                pass
+            break
+        except Exception as exc:
+            LOGGER.error(
+                'Consumer connection lost or error occurred (%s: %s). Reconnecting in 5 seconds...',
+                exc.__class__.__name__,
+                exc
+            )
+            time.sleep(5)
 
 
 if __name__ == '__main__':
