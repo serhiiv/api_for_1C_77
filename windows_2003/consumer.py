@@ -81,14 +81,19 @@ def connect_with_retry(retries=10, delay=3):
                 settings.rabbitmq_default_user,
                 settings.rabbitmq_default_pass
             )
-            connection = pika.BlockingConnection(
-                pika.ConnectionParameters(
-                    host=settings.rabbitmq_host,
-                    port=settings.rabbitmq_port,
-                    credentials=credentials,
-                    heartbeat=settings.rabbitmq_heartbeat
-                )
-            )
+            params = {
+                'host': settings.rabbitmq_host,
+                'port': settings.rabbitmq_port,
+                'credentials': credentials
+            }
+            
+            # Pika 1.x uses 'heartbeat', Pika 0.x (e.g. 0.11.2) uses 'heartbeat_interval'
+            try:
+                conn_params = pika.ConnectionParameters(heartbeat=settings.rabbitmq_heartbeat, **params)
+            except TypeError:
+                conn_params = pika.ConnectionParameters(heartbeat_interval=settings.rabbitmq_heartbeat, **params)
+
+            connection = pika.BlockingConnection(conn_params)
             return connection
         except Exception as exc:
             last_exception = exc
